@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Data Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080b14; --surface: #0f1422; --surface2: #161b2e; --border: #1e2640;
+  --accent: #00c8ff; --accent2: #7b61ff; --green: #00e5a0; --red: #ff4d6d;
+  --text: #dce4f5; --muted: #5a6585;
+  --mono: 'DM Mono', monospace; --sans: 'Syne', sans-serif;
+}
+body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; display:flex; flex-direction:column; overflow-x:hidden; }
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image: linear-gradient(rgba(0,200,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,255,0.025) 1px, transparent 1px);
+  background-size:44px 44px; pointer-events:none; z-index:0;
+}
+header { position:relative; z-index:1; padding:22px 40px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px; }
+.logo { width:38px; height:38px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+header h1 { font-size:1.2rem; font-weight:800; letter-spacing:0.04em; }
+.version-badge { font-family:var(--mono); font-size:0.65rem; color:var(--accent); background:rgba(0,200,255,0.1); border:1px solid rgba(0,200,255,0.2); padding:2px 9px; border-radius:4px; letter-spacing:0.1em; }
+.status-dot { margin-left:auto; display:flex; align-items:center; gap:7px; font-family:var(--mono); font-size:0.68rem; color:var(--muted); }
+.dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.main { position:relative; z-index:1; flex:1; max-width:1080px; margin:0 auto; width:100%; padding:36px 24px; display:flex; flex-direction:column; gap:24px; }
+.input-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; display:flex; flex-direction:column; gap:16px; }
+.input-label { font-family:var(--mono); font-size:0.65rem; color:var(--accent); letter-spacing:0.12em; text-transform:uppercase; }
+textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; font-family:var(--mono); font-size:0.88rem; color:var(--text); outline:none; resize:none; min-height:70px; line-height:1.6; transition:border-color 0.2s, box-shadow 0.2s; }
+textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,200,255,0.07); }
+textarea::placeholder { color:var(--muted); }
+.input-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.chips { display:flex; flex-wrap:wrap; gap:8px; }
+.chip { font-family:var(--mono); font-size:0.7rem; padding:5px 13px; border-radius:20px; background:transparent; border:1px solid var(--border); color:var(--muted); cursor:pointer; transition:all 0.18s; }
+.chip:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,200,255,0.06); }
+#submitBtn { background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; border-radius:10px; padding:12px 30px; font-family:var(--sans); font-size:0.85rem; font-weight:600; color:#080b14; cursor:pointer; transition:opacity 0.2s, transform 0.1s; letter-spacing:0.04em; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+#submitBtn:hover { opacity:0.85; }
+#submitBtn:active { transform:scale(0.97); }
+#submitBtn:disabled { opacity:0.35; cursor:not-allowed; }
+#resultArea { display:flex; flex-direction:column; gap:16px; }
+.loading-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:28px 24px; display:flex; align-items:center; gap:14px; font-family:var(--mono); font-size:0.82rem; color:var(--muted); animation:fadeIn 0.25s ease; }
+.spinner { width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; flex-shrink:0; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.code-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; animation:fadeIn 0.3s ease; }
+.code-card-header { display:flex; align-items:center; gap:10px; padding:12px 18px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+.code-card-header:hover { background:rgba(255,255,255,0.02); }
+.cc-title { font-family:var(--mono); font-size:0.68rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); flex:1; }
+.cc-toggle { font-size:0.65rem; color:var(--muted); transition:transform 0.2s; }
+.cc-toggle.open { transform:rotate(180deg); }
+.code-body { display:none; padding:16px 18px; }
+.code-body.open { display:block; }
+pre { font-family:var(--mono); font-size:0.78rem; color:var(--green); background:rgba(0,229,160,0.04); border:1px solid rgba(0,229,160,0.1); border-radius:8px; padding:14px; white-space:pre-wrap; word-break:break-all; line-height:1.75; }
+.result-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; animation:fadeIn 0.35s ease; }
+.result-header { display:flex; align-items:center; gap:10px; padding:14px 20px; border-bottom:1px solid var(--border); }
+.badge { font-family:var(--mono); font-size:0.62rem; padding:3px 9px; border-radius:5px; letter-spacing:0.1em; text-transform:uppercase; }
+.badge-table  { background:rgba(123,97,255,0.15); color:var(--accent2); border:1px solid rgba(123,97,255,0.3); }
+.badge-chart  { background:rgba(0,200,255,0.1);   color:var(--accent);  border:1px solid rgba(0,200,255,0.25); }
+.badge-scalar { background:rgba(0,229,160,0.1);   color:var(--green);   border:1px solid rgba(0,229,160,0.25); }
+.badge-error  { background:rgba(255,77,109,0.1);  color:var(--red);     border:1px solid rgba(255,77,109,0.25); }
+.result-query { font-size:0.85rem; font-weight:600; color:var(--text); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.result-body { padding:22px; }
+.scalar-value { font-family:var(--mono); font-size:2.8rem; font-weight:400; color:var(--accent); text-align:center; padding:28px; letter-spacing:-0.02em; }
+.error-msg { font-family:var(--mono); font-size:0.8rem; color:var(--red); background:rgba(255,77,109,0.05); border:1px solid rgba(255,77,109,0.15); border-radius:8px; padding:16px; white-space:pre-wrap; }
+.table-wrap { overflow-x:auto; border-radius:9px; border:1px solid var(--border); }
+table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:0.78rem; }
+thead tr { background:var(--surface2); border-bottom:2px solid var(--border); }
+th { padding:10px 16px; text-align:left; font-weight:500; color:var(--accent); letter-spacing:0.07em; text-transform:uppercase; font-size:0.66rem; white-space:nowrap; }
+td { padding:9px 16px; border-bottom:1px solid var(--border); color:var(--text); }
+tr:last-child td { border-bottom:none; }
+tbody tr:hover td { background:rgba(255,255,255,0.018); }
+td:first-child { color:var(--muted); }
+.chart-wrap {
+  width: 100%;
+  height: 480px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+@media(max-width:680px) {
+  header { padding:18px 20px; }
+  .main { padding:24px 16px; }
+  .scalar-value { font-size:2rem; }
+  #submitBtn { width:100%; justify-content:center; }
+  .input-footer { flex-direction:column; align-items:flex-start; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⬡</div>
+  <h1>DataAgent</h1>
+  <span class="version-badge">v1.0</span>
+  <div class="status-dot"><div class="dot"></div> <a href="/upload-page" style="color:#00c8ff;text-decoration:none;">
+  Go to Upload Page →
+</a></div>
+</header>
+
+<div class="main">
+  <div class="input-card">
+    <label class="input-label">Ask a question about your data</label>
+    <textarea id="query" placeholder="e.g. Total orders per month in 2018…"></textarea>
+    <div class="input-footer">
+      <div class="chips">
+        <div class="chip" onclick="fill('Total orders per month in 2018')">Orders / month 2018</div>
+        <div class="chip" onclick="fill('Total amount and quantity sold per state')">Amount by state</div>
+        <div class="chip" onclick="fill('Top 5 products by total sales amount')">Top 5 products</div>
+        <div class="chip" onclick="fill('Monthly sales trend line chart')">Monthly trend</div>
+      </div>
+      <button id="submitBtn" onclick="submitQuery()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        Run Query
+      </button>
+    </div>
+  </div>
+  <div id="resultArea"></div>
+
+</div>
+
+<script>
+const queryEl = document.getElementById('query');
+const submitBtn = document.getElementById('submitBtn');
+const resultArea = document.getElementById('resultArea');
+
+queryEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitQuery(); }
+});
+
+function fill(text) { queryEl.value = text; queryEl.focus(); }
+
+function esc(s) {
+  return String(s ?? '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildTable(cols, rows) {
+  let h = `<div class="table-wrap"><table><thead><tr>`;
+  cols.forEach(c => h += `<th>${esc(c)}</th>`);
+  h += `</tr></thead><tbody>`;
+  rows.forEach(row => { h += `<tr>`; row.forEach(cell => h += `<td>${esc(cell)}</td>`); h += `</tr>`; });
+  h += `</tbody></table></div>`;
+  return h;
+}
+
+function toggleCode(header) {
+  header.nextElementSibling.classList.toggle('open');
+  header.querySelector('.cc-toggle').classList.toggle('open');
+}
+
+function renderChart(chartId, rawData) {
+  // rawData arrives from Flask as an already-parsed JS object (axios auto-parses JSON).
+  // BUT safe_executor sends it as a JSON string inside the outer JSON response.
+  // So d.data may be a string — parse it once if needed, never twice.
+  let fig;
+  if (typeof rawData === 'string') {
+    try { fig = JSON.parse(rawData); }
+    catch (e) { console.error('Chart JSON parse failed:', e); return; }
+  } else {
+    fig = rawData;
+  }
+
+  // Plotly's to_json() produces {data: [...], layout: {...}}
+  // Use Plotly.newPlot with the full fig object to preserve all axis/value info.
+  const traces = fig.data || [];
+  const layout = Object.assign({
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor:  'rgba(0,0,0,0)',
+    font:  { color: '#dce4f5', family: 'DM Mono, monospace' },
+    xaxis: { gridcolor: '#1e2640', zerolinecolor: '#1e2640' },
+    yaxis: { gridcolor: '#1e2640', zerolinecolor: '#1e2640' },
+    margin: { t: 40, r: 20, b: 60, l: 60 }
+  }, fig.layout || {});
+
+  Plotly.newPlot(chartId, traces, layout, { responsive: true, displayModeBar: false });
+}
+
+async function submitQuery() {
+  const query = queryEl.value.trim();
+  if (!query) return;
+
+  submitBtn.disabled = true;
+  resultArea.innerHTML = `<div class="loading-card"><div class="spinner"></div>Thinking…</div>`;
+
+  try {
+    const res = await axios.post('/query', new URLSearchParams({ query }));
+    const d = res.data;
+    let html = '';
+
+    if (d.code) {
+      html += `<div class="code-card">
+        <div class="code-card-header" onclick="toggleCode(this)">
+          <span class="cc-title">⚙ Generated Code</span>
+          <span class="cc-toggle">▼</span>
+        </div>
+        <div class="code-body"><pre>${esc(d.code)}</pre></div>
+      </div>`;
+    }
+
+    const typeMap = { table:'badge-table', chart:'badge-chart', scalar:'badge-scalar', error:'badge-error' };
+    html += `<div class="result-card">
+      <div class="result-header">
+        <span class="badge ${typeMap[d.type]||'badge-scalar'}">${d.type||'result'}</span>
+        <span class="result-query">${esc(query)}</span>
+      </div>
+      <div class="result-body">`;
+
+    if (d.type === 'error') {
+      html += `<div class="error-msg">${esc(d.message || d.error)}</div>`;
+
+    } else if (d.type === 'scalar') {
+      html += `<div class="scalar-value">${esc(d.value ?? d.result)}</div>`;
+
+    } else if (d.type === 'table') {
+      html += buildTable(d.columns, d.rows);
+
+    } else if (d.type === 'chart') {
+      const chartId = 'chart_' + Date.now();
+      html += `<div id="${chartId}" class="chart-wrap"></div>`;
+      // Inject html first, then render into the now-existing DOM node
+      html += `</div></div>`;
+      resultArea.innerHTML = html;
+      renderChart(chartId, d.data);
+      return; // already set innerHTML above
+
+    } else if (d.result) {
+      html += `<pre>${esc(d.result)}</pre>`;
+    }
+
+    html += `</div></div>`;
+    resultArea.innerHTML = html;
+
+  } catch (err) {
+    resultArea.innerHTML = `<div class="result-card">
+      <div class="result-header"><span class="badge badge-error">error</span><span class="result-query">${esc(query)}</span></div>
+      <div class="result-body"><div class="error-msg">${esc(err.response?.data?.error || err.message)}</div></div>
+    </div>`;
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

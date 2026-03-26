@@ -1,0 +1,94 @@
+{
+    "master": {
+        "columns": [
+            {
+                "name": "Order ID",
+                "dtype": "object"
+            },
+            {
+                "name": "Order Date",
+                "dtype": "datetime64[ns]"
+            },
+            {
+                "name": "CustomerName",
+                "dtype": "object"
+            },
+            {
+                "name": "State",
+                "dtype": "object"
+            },
+            {
+                "name": "City",
+                "dtype": "object"
+            },
+            {
+                "name": "Amount",
+                "dtype": "float64"
+            },
+            {
+                "name": "Profit",
+                "dtype": "float64"
+            },
+            {
+                "name": "Quantity",
+                "dtype": "int64"
+            },
+            {
+                "name": "Category",
+                "dtype": "object"
+            },
+            {
+                "name": "Sub-Category",
+                "dtype": "object"
+            }
+        ],
+        "row_count": 1500,
+        "sample": [
+            {
+                "Order ID": "B-25601",
+                "Order Date": "2018-04-01T00:00:00",
+                "CustomerName": "Bharat",
+                "State": "Gujarat",
+                "City": "Ahmedabad",
+                "Amount": 1275.0,
+                "Profit": -1148.0,
+                "Quantity": 7,
+                "Category": "Furniture",
+                "Sub-Category": "Bookcases"
+            },
+            {
+                "Order ID": "B-25601",
+                "Order Date": "2018-04-01T00:00:00",
+                "CustomerName": "Bharat",
+                "State": "Gujarat",
+                "City": "Ahmedabad",
+                "Amount": 66.0,
+                "Profit": -12.0,
+                "Quantity": 5,
+                "Category": "Clothing",
+                "Sub-Category": "Stole"
+            },
+            {
+                "Order ID": "B-25601",
+                "Order Date": "2018-04-01T00:00:00",
+                "CustomerName": "Bharat",
+                "State": "Gujarat",
+                "City": "Ahmedabad",
+                "Amount": 8.0,
+                "Profit": -2.0,
+                "Quantity": 3,
+                "Category": "Clothing",
+                "Sub-Category": "Hankerchief"
+            }
+        ],
+        "description": "Combined dataset of orders and order_details with customer, product, and transaction information.",
+        "hints": [
+            "CustomerName identifies customers",
+            "Category and Sub-Category are product dimensions",
+            "Order Date is datetime",
+            "Amount is revenue",
+            "Profit can be negative or positive",
+            "Quantity represents number of items"
+        ]
+    }
+}
